@@ -1,0 +1,6 @@
+host: 'localhost'
+port: 4321
+folder: 'tmp/client'
+file_chunk_size: 67108864
+refresh_interval: 4
+filter: ''

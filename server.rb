@@ -2,15 +2,16 @@ require_relative 'common'
 
 class Server
 
-  def initialize(folder, port=DEFAULT_PORT)
-    @folder = folder
-    @port = port || DEFAULT_PORT
+  def initialize(settings)
+    @interface = safe_read_setting settings, 'interface'
+    @port = safe_read_setting settings, 'port'
+    @folder = safe_read_setting settings, 'folder'
     Dir.chdir(@folder)
   end
 
   def start
-    server = TCPServer.open('0.0.0.0', @port)
-    puts "Starting server on port #{@port}, folder: #{@folder}"
+    server = TCPServer.open(@interface, @port)
+    puts "Server listening @ '#{@interface}:#{@port}', folder: '#{@folder}'"
     
     Thread.abort_on_exception = true
     mutex = Mutex.new
@@ -120,5 +121,5 @@ class Server
 
 end
 
-server = Server.new('tmp/server')
+server = Server.new(read_config)
 server.start

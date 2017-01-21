@@ -2,12 +2,13 @@ require_relative 'common'
 
 class Client
 
-  def initialize(host, folder, filter='', refresh_interval=4, port=DEFAULT_PORT)
-    @host = host
-    @folder = folder
-    @refresh_interval = refresh_interval
-    @port = port || DEFAULT_PORT
-    @filter = filter
+  def initialize(settings)
+    @host = safe_read_setting settings, 'host'
+    @folder = safe_read_setting settings, 'folder'
+    @refresh_interval = safe_read_setting settings, 'refresh_interval'
+    @port = safe_read_setting settings, 'port'
+    @filter = safe_read_setting settings, 'filter'
+    @file_chunk_size = safe_read_setting settings, 'file_chunk_size'
     Dir.chdir(@folder)
   end
 
@@ -33,7 +34,7 @@ class Client
     updated_files.each do |file|
       first = true
       File.open(file, 'rb') do |f|
-        while chunk = f.read(FILE_CHUNK_SIZE)
+        while chunk = f.read(@file_chunk_size)
           puts "Updating #{file}: chunk" + (first ? " (first) " : " ") + " - size: #{chunk.size} - zipped: #{zip(chunk).size}"
           send_msg 'msg_update_file', serialize({file: file, first: first, contents: zip(chunk)})
           first = false
@@ -68,8 +69,8 @@ class Client
   end
 
   def connect
-    puts "Connecting to #{@host}:#{@port}"
     @remote = TCPSocket.open(@host, @port)
+    puts "Connected to #{@host}:#{@port}"
   end
 
   def send_msg(msg, data)
@@ -93,5 +94,5 @@ class Client
 
 end
 
-client = Client.new('localhost', 'tmp/client', '')
+client = Client.new(read_config)
 client.run

@@ -1,10 +1,7 @@
+require 'yaml'
 require 'zlib'
 require 'socket'
 require 'fileutils'
-
-# General constant defines
-DEFAULT_PORT = 4321
-FILE_CHUNK_SIZE = 2 ** 26
 
 # Message ids
 class MsgDB
@@ -88,4 +85,18 @@ def decode_message(sock)
     id: id,
     data: sock.read(data_length)
   }
+end
+
+def read_config
+  raise 'Missing configuraton file argument' if ARGV.empty?
+  YAML.load_file(ARGV.first)
+end
+
+def safe_read_setting(dict, key)
+  val = dict[key]
+  if val.nil?
+    raise "Missing required setting `#{key}`"
+  else
+    val
+  end
 end
