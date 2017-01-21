@@ -2,7 +2,7 @@ require_relative 'common'
 
 class Client
 
-  def initialize(host, folder, filter='', refresh_interval=5, port=DEFAULT_PORT)
+  def initialize(host, folder, filter='', refresh_interval=3, port=DEFAULT_PORT)
     @host = host
     @folder = folder
     @refresh_interval = refresh_interval
@@ -24,7 +24,8 @@ class Client
   private
 
   def send_request_folder_info
-    send_msg 'folder_info', {filter: @filter}
+    reply = send_msg 'msg_folder_info', serialize(@filter)
+    deserialize reply[:data]
   end
 
   def send_to_update(remote_files)
@@ -32,7 +33,7 @@ class Client
     updated_files.each do |file|
       contents = File.open(file, 'rb') { |f| f.read }
       puts "Updating #{file}"
-      send_msg 'update_file', {file: file, contents: Base64.strict_encode64(contents) }
+      send_msg 'msg_update_file', serialize({file: file, contents: zip(contents)})
     end
   end
 
@@ -53,10 +54,7 @@ class Client
 
   def send_to_delete(remote_files)
     erased_files = to_delete remote_files
-    erased_files.each do |file|
-      puts "Deleting #{file}"
-      send_msg 'delete_file', {file: file}
-    end
+    send_msg 'msg_delete_files', serialize(erased_files) unless erased_files.empty?
   end
 
   def to_delete(remote_files)
@@ -69,13 +67,20 @@ class Client
     @remote = TCPSocket.open(@host, @port)
   end
 
-  def send_msg(msg, data={})
+  def send_msg(msg, data)
     puts "Sending #{msg}"
-    @remote.puts "#{msg},#{Base64.strict_encode64 data.to_json}"
-    reply = JSON.parse Base64.strict_decode64(@remote.gets.chomp)
-    if reply['error']
-      puts "Error: #{reply['error']}" 
-      return {}
+    @remote.write encode_data(msg, data)
+    # puts "Sent, reading reply"
+    reply = decode_message @remote
+    # puts "Got reply"
+    # Intercept info messages and print them
+    if reply[:id] == MSG_DB.id('msg_info')
+      reply_str = deserialize reply[:data]
+      if reply.size > 0
+        puts "Reply to '#{msg}': '#{reply_str}'"
+      end
+      return nil
+    # Else forward decoded message for handling
     else
       return reply
     end

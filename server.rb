@@ -15,7 +15,7 @@ class Server
     loop do
       Thread.new(server.accept) do |client|
         puts "#{peer_str client}: new session"
-        while !client.closed? && recv_msg(client)
+        while recv_msg(client)
           # Do stuff
         end
         puts "#{peer_str client}: session ended"
@@ -24,48 +24,54 @@ class Server
   end
 
   def recv_msg(sock)
-    line = sock.gets
-    if line.nil?
+    return false if sock.closed?
+    begin
+      msg = decode_message(sock)
+    rescue => e
+      puts "#{peer_str sock}: fatal error: #{e.to_s}"
       return false
-    else
-      res = line.chomp.split(",")
-      msg = res[0]
-      puts "#{peer_str sock}: msg_#{msg}"
-      data = JSON.parse Base64.strict_decode64(res[1])
-      begin
-        reply_with sock, send("msg_#{msg}", data)
-      rescue => e
-        reply_with sock, {error: e.to_s}
-      end
-      return true
     end
+    begin
+      handler = MSG_DB.handler(msg[:id])
+      reply_with sock, handler, serialize(send(handler, sock, msg[:data]))
+    rescue => e
+      reply_with sock, 'msg_info', serialize(e.to_s)
+      puts "#{peer_str sock}: error: #{e.to_s}"
+    end
+    return true
   end
 
-  def reply_with(sock, data)
-    sock.puts Base64.strict_encode64(data.to_json)
+  def reply_with(sock, handler, data)
+    sock.write encode_data(handler, data)
   end
 
   private
 
   # Messages
 
-  def msg_folder_info(params)
-    files_mtime params['filter']
+  def msg_folder_info(sock, data)
+    puts "#{peer_str sock}: msg_folder_info"
+    filter = deserialize data
+    files_mtime filter
   end
 
-  def msg_update_file(params)
-    file = validate_file_path params['file']
+  def msg_update_file(sock, data)
+    params = deserialize data
+    file = validate_file_path params[:file]
     FileUtils.mkpath File.dirname(file)
-    File.open(file, 'wb') { |f| f.write Base64.strict_decode64(params['contents']) }
-    puts "Updated #{file}"
-    {}
+    File.open(file, 'wb') { |f| f.write unzip(params[:contents]) }
+    puts "#{peer_str sock}: msg_update_file: '#{file}'"
+    ""
   end
 
-  def msg_delete_file(params)
-    file = validate_file_path params['file']
-    FileUtils.rm_rf file
-    puts "Deleted #{params['file']}"
-    {}
+  def msg_delete_files(sock, data)
+    files = deserialize data
+    files.each do |file|
+      file = validate_file_path file
+      FileUtils.rm_rf file
+    end
+    puts "#{peer_str sock}: msg_delete_files: '#{files}'"
+    ""
   end
 
   # Helpers
@@ -76,8 +82,8 @@ class Server
   end
 
   def validate_file_path(file)
-    if file.include?("..") || file.include?("~") || file[0] == "/"
-      raise "Invalid file path #{file}"
+    if file.empty? || file.include?("..") || file.include?("~") || file[0] == "/"
+      raise "Invalid file path `#{file}`"
     end
     file
   end
