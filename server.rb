@@ -11,14 +11,36 @@ class Server
   def start
     server = TCPServer.open('0.0.0.0', @port)
     puts "Starting server on port #{@port}, folder: #{@folder}"
+    
     Thread.abort_on_exception = true
+    mutex = Mutex.new
+    remote_client = nil
+    
     loop do
       Thread.new(server.accept) do |client|
-        puts "#{peer_str client}: new session"
-        while recv_msg(client)
-          # Do stuff
+    
+        # Allow only single client, reject others    
+        can_access = mutex.synchronize do
+            if remote_client.nil?
+                remote_client = peer_str client
+                true
+            else
+                false
+            end
         end
-        puts "#{peer_str client}: session ended"
+
+        if can_access
+            puts "#{peer_str client}: new session"
+            while recv_msg(client)
+              # Loop
+            end
+            puts "#{peer_str client}: session ended"
+            mutex.synchronize{ remote_client = nil }
+        else
+            puts "#{peer_str client}: session rejected"
+            reply_with client, 'msg_info', serialize("server busy with #{remote_client}")
+            client.close
+        end
       end
     end
   end
