@@ -3,9 +3,9 @@ require_relative 'common'
 class Server
 
   def initialize(settings)
-    @interface = safe_read_setting settings, 'interface'
-    @port = safe_read_setting settings, 'port'
-    @folder = safe_read_setting settings, 'folder'
+    @interface = settings['interface']
+    @port = settings['port']
+    @folder = settings['folder']
     Dir.chdir(@folder)
   end
 
@@ -121,5 +121,5 @@ class Server
 
 end
 
-server = Server.new(read_config)
+server = Server.new(Settings.new)
 server.start

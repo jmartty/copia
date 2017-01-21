@@ -87,16 +87,22 @@ def decode_message(sock)
   }
 end
 
-def read_config
-  raise 'Missing configuraton file argument' if ARGV.empty?
-  YAML.load_file(ARGV.first)
-end
+# Settings helpers
 
-def safe_read_setting(dict, key)
-  val = dict[key]
-  if val.nil?
-    raise "Missing required setting `#{key}`"
-  else
-    val
+class Settings
+
+  def initialize
+    raise 'Missing configuraton file argument' if ARGV.empty?
+    @settings = YAML.load_file(ARGV.first)
   end
+
+  def [](key)
+    val = @settings[key]
+    if val.nil?
+      raise "Missing required setting `#{key}`"
+    else
+      val
+    end
+  end
+
 end
