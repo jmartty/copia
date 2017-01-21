@@ -25,12 +25,14 @@ class Server
 
   def recv_msg(sock)
     return false if sock.closed?
+    
     begin
       msg = decode_message(sock)
     rescue => e
       puts "#{peer_str sock}: fatal error: #{e.to_s}"
       return false
     end
+
     begin
       handler = MSG_DB.handler(msg[:id])
       reply_with sock, handler, serialize(send(handler, sock, msg[:data]))
@@ -38,7 +40,8 @@ class Server
       reply_with sock, 'msg_info', serialize(e.to_s)
       puts "#{peer_str sock}: error: #{e.to_s}"
     end
-    return true
+    
+    true
   end
 
   def reply_with(sock, handler, data)
@@ -59,7 +62,8 @@ class Server
     params = deserialize data
     file = validate_file_path params[:file]
     FileUtils.mkpath File.dirname(file)
-    File.open(file, 'wb') { |f| f.write unzip(params[:contents]) }
+    open_mode = params[:first] ? 'wb' : 'ab'
+    File.open(file, open_mode) { |f| f.write unzip(params[:contents]) }
     puts "#{peer_str sock}: msg_update_file: '#{file}'"
     ""
   end

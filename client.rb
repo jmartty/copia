@@ -31,9 +31,14 @@ class Client
   def send_to_update(remote_files)
     updated_files = to_update remote_files
     updated_files.each do |file|
-      contents = File.open(file, 'rb') { |f| f.read }
-      puts "Updating #{file}"
-      send_msg 'msg_update_file', serialize({file: file, contents: zip(contents)})
+      first = true
+      File.open(file, 'rb') do |f|
+        while chunk = f.read(FILE_CHUNK_SIZE)
+          puts "Updating #{file}: chunk" + (first ? " (first) " : " ") + " - size: #{chunk.size} - zipped: #{zip(chunk).size}"
+          send_msg 'msg_update_file', serialize({file: file, first: first, contents: zip(chunk)})
+          first = false
+        end
+      end
     end
   end
 

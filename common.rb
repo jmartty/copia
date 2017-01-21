@@ -4,7 +4,7 @@ require 'fileutils'
 
 # General constant defines
 DEFAULT_PORT = 4321
-FILE_CHUNK_SIZE = 2 ** 16
+FILE_CHUNK_SIZE = 2 ** 26
 
 # Message ids
 class MsgDB
@@ -27,10 +27,13 @@ end
 
 MSG_DEFINITIONS = ['msg_info',
                    'msg_folder_info',
+                   'msg_delete_files',
                    'msg_update_file',
-                   'msg_delete_files']
+                  ]
 
 MSG_DB = MsgDB.new MSG_DEFINITIONS
+
+# Helpers
 
 def files_mtime(filter)
   res = {}
@@ -66,7 +69,7 @@ def encode_data(handler, data)
   msg_id = MSG_DB.id(handler)
   bytes += [msg_id].pack("C")
   # puts "Data size: #{data.size}"
-  bytes += [data.size].pack("L")
+  bytes += [data.size].pack("Q")
   bytes += data
   # puts "Bytes: #{bytes.bytes.map{|c| c.to_i}}"
   bytes
@@ -75,14 +78,14 @@ end
 def decode_message(sock)
   # puts "Decoding message"
   # Read message id
-  id = sock.recv(1).unpack("C").first
+  id = sock.read(1).unpack("C").first
   # puts "ID: #{id} / handler: #{MSG_DB.handler(id)}"
   # Read data length
-  data_length = sock.recv(4).unpack("L").first
+  data_length = sock.read(8).unpack("Q").first
   # puts "Data length: #{data_length}"
   # Return hash with payload
   {
     id: id,
-    data: sock.recv(data_length)
+    data: sock.read(data_length)
   }
 end
