@@ -11,7 +11,7 @@ class Server
 
   def start
     server = TCPServer.open(@interface, @port)
-    puts "Server listening @ '#{@interface}:#{@port}', folder: '#{@folder}'"
+    log "Server listening @ '#{@interface}:#{@port}', folder: '#{@folder}'"
     
     Thread.abort_on_exception = true
     mutex = Mutex.new
@@ -31,14 +31,14 @@ class Server
         end
 
         if can_access
-            puts "#{peer_str client}: new session"
+            log "#{peer_str client}: new session"
             while recv_msg(client)
               # Loop
             end
-            puts "#{peer_str client}: session ended"
+            log "#{peer_str client}: session ended"
             mutex.synchronize{ remote_client = nil }
         else
-            puts "#{peer_str client}: session rejected"
+            log "#{peer_str client}: session rejected"
             reply_with client, 'msg_info', serialize("server busy with #{remote_client}")
             client.close
         end
@@ -52,7 +52,7 @@ class Server
     begin
       msg = decode_message(sock)
     rescue => e
-      puts "#{peer_str sock}: fatal error: #{e.to_s}"
+      log "#{peer_str sock}: fatal error: #{e.to_s}"
       return false
     end
 
@@ -61,7 +61,7 @@ class Server
       reply_with sock, handler, serialize(send(handler, sock, msg[:data]))
     rescue => e
       reply_with sock, 'msg_info', serialize(e.to_s)
-      puts "#{peer_str sock}: error: #{e.to_s}"
+      log "#{peer_str sock}: error: #{e.to_s}"
     end
     
     true
@@ -76,7 +76,7 @@ class Server
   # Messages
 
   def msg_folder_info(sock, data)
-    puts "#{peer_str sock}: msg_folder_info"
+    log "#{peer_str sock}: msg_folder_info"
     filter = deserialize data
     files_mtime filter
   end
@@ -87,7 +87,7 @@ class Server
     FileUtils.mkpath File.dirname(file)
     open_mode = params[:first] ? 'wb' : 'ab'
     File.open(file, open_mode) { |f| f.write unzip(params[:contents]) }
-    puts "#{peer_str sock}: msg_update_file: '#{file}'"
+    log "#{peer_str sock}: msg_update_file: '#{file}' #{params[:first] ? '' : '(chunk)'}"
     ""
   end
 
@@ -97,7 +97,7 @@ class Server
       file = validate_file_path file
       FileUtils.rm_rf file
     end
-    puts "#{peer_str sock}: msg_delete_files: '#{files}'"
+    log "#{peer_str sock}: msg_delete_files: '#{files}'"
     ""
   end
 

@@ -3,6 +3,11 @@ require 'zlib'
 require 'socket'
 require 'fileutils'
 
+# Logging helper
+def log(msg)
+  puts "#{Time.now.strftime("%d/%m/%Y %H:%M:%S")}| #{msg}"
+end
+
 # Message ids
 class MsgDB
   def initialize(entries)
@@ -39,7 +44,7 @@ def files_mtime(filter)
     begin
         res[f] = File.mtime(f).to_i if f =~ rg_filter
     rescue => e
-        puts "Error: #{e}"
+        log "Error: #{e}"
     end
   end
   res
@@ -65,21 +70,21 @@ def encode_data(handler, data)
   bytes = ""
   msg_id = MSG_DB.id(handler)
   bytes += [msg_id].pack("C")
-  # puts "Data size: #{data.size}"
+  # log "Data size: #{data.size}"
   bytes += [data.size].pack("Q")
   bytes += data
-  # puts "Bytes: #{bytes.bytes.map{|c| c.to_i}}"
+  # log "Bytes: #{bytes.bytes.map{|c| c.to_i}}"
   bytes
 end
 
 def decode_message(sock)
-  # puts "Decoding message"
+  # log "Decoding message"
   # Read message id
   id = sock.read(1).unpack("C").first
-  # puts "ID: #{id} / handler: #{MSG_DB.handler(id)}"
+  # log "ID: #{id} / handler: #{MSG_DB.handler(id)}"
   # Read data length
   data_length = sock.read(8).unpack("Q").first
-  # puts "Data length: #{data_length}"
+  # log "Data length: #{data_length}"
   # Return hash with payload
   {
     id: id,

@@ -36,11 +36,11 @@ class Client
       File.open(file, 'rb') do |f|
         # Special case for empty files
         if f.size == 0
-          puts "Updating #{file}: empty file"
+          log "Updating #{file}: empty file"
           send_msg 'msg_update_file', serialize({file: file, first: first, contents: zip("")})
         else
           while chunk = f.read(@file_chunk_size)
-            puts "Updating #{file}: chunk" + (first ? " (first) " : " ") + " - size: #{chunk.size} - zipped: #{zip(chunk).size}"
+            log "Updating #{file}: chunk" + (first ? " (first) " : " ") + " - size: #{chunk.size} - zipped: #{zip(chunk).size}"
             send_msg 'msg_update_file', serialize({file: file, first: first, contents: zip(chunk)})
             first = false
           end
@@ -76,20 +76,20 @@ class Client
 
   def connect
     @remote = TCPSocket.open(@host, @port)
-    puts "Connected to #{@host}:#{@port}"
+    log "Connected to #{@host}:#{@port}"
   end
 
   def send_msg(msg, data)
-    puts "Sending #{msg}"
+    log "Sending #{msg}"
     @remote.write encode_data(msg, data)
-    # puts "Sent, reading reply"
+    # log "Sent, reading reply"
     reply = decode_message @remote
-    # puts "Got reply"
+    # log "Got reply"
     # Intercept info messages and print them
     if reply[:id] == MSG_DB.id('msg_info')
       reply_str = deserialize reply[:data]
       if reply.size > 0
-        puts "Reply to '#{msg}': '#{reply_str}'"
+        log "Reply to '#{msg}': '#{reply_str}'"
       end
       return nil
     # Else forward decoded message for handling
