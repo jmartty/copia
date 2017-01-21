@@ -1,4 +1,3 @@
-require 'json'
 require 'zlib'
 require 'socket'
 require 'fileutils'

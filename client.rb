@@ -15,8 +15,8 @@ class Client
     connect
     loop do
       remote_files = send_request_folder_info
-      send_to_update remote_files
       send_to_delete remote_files
+      send_to_update remote_files
       sleep @refresh_interval
     end
   end
