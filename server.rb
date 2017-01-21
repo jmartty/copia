@@ -81,8 +81,12 @@ class Server
   # Helpers
 
   def peer_str(socket)
-    addr = socket.peeraddr(false)
-    "#{addr[2]}:#{addr[1]}"
+    begin
+      addr = socket.peeraddr(false)
+      "#{addr[2]}:#{addr[1]}"
+    rescue => e
+      'undefined'
+    end
   end
 
   def validate_file_path(file)

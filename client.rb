@@ -2,7 +2,7 @@ require_relative 'common'
 
 class Client
 
-  def initialize(host, folder, filter='', refresh_interval=3, port=DEFAULT_PORT)
+  def initialize(host, folder, filter='', refresh_interval=4, port=DEFAULT_PORT)
     @host = host
     @folder = folder
     @refresh_interval = refresh_interval
