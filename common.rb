@@ -40,9 +40,11 @@ MSG_DB = MsgDB.new MSG_DEFINITIONS
 def files_mtime(filter)
   res = {}
   rg_filter = Regexp.new filter
-  Dir.glob("**/*") do |f|
+  Dir.glob("**/*", File::FNM_DOTMATCH) do |f|
     begin
-        res[f] = File.mtime(f).to_i if f =~ rg_filter
+      if File.file?(f) && f =~ rg_filter
+        res[f] = File.mtime(f).to_i
+      end
     rescue => e
         log "Error: #{e}"
     end

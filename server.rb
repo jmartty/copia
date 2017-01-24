@@ -78,7 +78,7 @@ class Server
   def msg_folder_info(sock, data)
     log "#{peer_str sock}: msg_folder_info"
     filter = deserialize data
-    files_mtime filter
+    zip(serialize(files_mtime(filter)))
   end
 
   def msg_update_file(sock, data)

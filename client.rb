@@ -15,10 +15,14 @@ class Client
   def run
     connect
     loop do
+      start_time = Time.now.to_i
+
       remote_files = send_request_folder_info
       send_to_delete remote_files
       send_to_update remote_files
-      sleep @refresh_interval
+
+      delay = @refresh_interval - (Time.now.to_i - start_time)
+      sleep(delay) if delay > 0
     end
   end
 
@@ -26,7 +30,7 @@ class Client
 
   def send_request_folder_info
     reply = send_msg 'msg_folder_info', serialize(@filter)
-    deserialize reply[:data]
+    deserialize(unzip(deserialize reply[:data]))
   end
 
   def send_to_update(remote_files)
