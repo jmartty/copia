@@ -33,6 +33,8 @@ filter: ''
 
 Starting the server: `ruby server.rb server_config.yml`
 
-Starting the client: `ruby client.rb server_config.yml`
+Starting the client: `ruby client.rb client_config.yml`
 
-After startup, just drop/delete files in the client's folder and they will be syncronized with the server's folder. **Only one client is allowed at a time.**
+After startup, just drop/delete files in the client's folder and they will be syncronized with the server's folder.
+
+**Only one client is allowed at a time.**
