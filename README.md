@@ -24,7 +24,7 @@ file_chunk_size: 67108864
 # Seconds to wait between synchronization attemps
 refresh_interval: 4
 # Regex applied to file listings, files that do not match are excluded
-# Example to include only .txt or .ini file extensions: '\\.(txt|ini)^'
+# Example to include only .txt or .ini file extensions: '\\.(txt|ini)$'
 # Empty will match anything
 filter: ''
 ```
